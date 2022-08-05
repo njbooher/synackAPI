@@ -282,7 +282,7 @@ class synack:
                 else:
                     continue
             elif mission_only == False:
-                if self.jsonResponse[i]['vulnerability_discovery'] == True:               
+                if self.jsonResponse[i]['vulnerability_discovery'] == True:
                     if self.jsonResponse[i]['category']['name'].lower() == category.lower():
                         targets.append(self.jsonResponse[i]['codename'])
                     else:
@@ -350,7 +350,7 @@ class synack:
 ################################
 
     def getScope(self, codename):
-        category = self.getCategory(codename) 
+        category = self.getCategory(codename)
         orgID = self.__getOrgID(codename)
         slug = self.getTargetID(codename)
         if category.lower() == "web application":
@@ -360,119 +360,16 @@ class synack:
             response = self.try_requests("GET", scopeURL, 10)
             jsonResponse = response.json()
             j = 0
-            while j < len(jsonResponse):
-                if jsonResponse[j]['status'] in ["out","tbd"]:
-                    tmpOOS = set()
-                    for thisRule in range(len(jsonResponse[j]['rules'])):
-                        url = urlparse(jsonResponse[j]['rules'][thisRule]['rule'])
-                        scheme = url.scheme
-                        netloc = url.netloc
-                        path   = url.path
-                        port   = url.port
-                        wildcard = False
-                        if len(netloc) != 0:
-                            subdomain = netloc.split('.')[0]
-                            if subdomain == "*":
-                                wildcard = True
-                                netloc = ".".join(netloc.split('.')[1:])
+            for j in range(len(jsonResponse)):
+                for thisRule in range(len(jsonResponse[j]['rules'])):
+                    scopeDict = self.__parseScopeRule(jsonResponse[j]['rules'][thisRule]['rule'])
+
+                    if scopeDict is not None:
+                        if jsonResponse[j]['status'] in ["out","tbd"] or jsonResponse[j]['rules'][thisRule]['status'] in ["out","tbd"]:
+                            oosRules.append(scopeDict)
                         else:
-                            if len(path) != 0:
-                                netloc = path.split('/')[0]
-                                checkWildcard = netloc.split('.')[0]
-                                if checkWildcard == "*":
-                                    wildcard = True
-                                    if ":" in netloc:
-                                        port = netloc.split(':')[1]
-                                        thisURL = netloc.split(':')[0]
-                                        netloc = ".".join(thisURL.split('.')[1:])
-                                    else:
-                                        port = 443
-                                        netloc = ".".join(netloc.split('.')[1:])
-                                else:
-                                    if ":" in netloc:
-                                        port = netloc.split(':')[1]
-                                        thisURL = netloc.split(':')[0]
-                                        netloc = ".".join(thisURL.split('.')[0:])
-                                    else:
-                                        port = 443
-                                        netloc = ".".join(netloc.split('.')[0:])
-                                path = "/" + "/".join(path.split('/')[1:])
-                            else:
-                                continue
-                        oosDict = {
-                                        'scheme' : scheme,
-                                        'netloc': netloc,
-                                        'path': path,
-                                        'port': port,
-                                        'wildcard': wildcard,
-                                        'fullURI' : scheme+netloc
+                            allRules.append(scopeDict)
 
-                        }
-                    oosRules.append(oosDict)            
-                    j+=1
-                else:
-                    for thisRule in range(len(jsonResponse[j]['rules'])):
-                        url = urlparse(jsonResponse[j]['rules'][thisRule]['rule'])
-                        scheme = url.scheme
-                        netloc = url.netloc
-                        path   = url.path
-                        port   = url.port
-                        wildcard = False
-
-                        if len(netloc) != 0:
-                            subdomain = netloc.split('.')[0]
-                            if subdomain == "*":
-                                wildcard = True
-                                netloc = ".".join(netloc.split('.')[1:])
-                        else:
-                            if len(path) != 0:
-                                netloc = path.split('/')[0]
-                                checkWildcard = netloc.split('.')[0]
-                                if checkWildcard == "*":
-                                    wildcard = True
-                                    if ":" in netloc:
-                                        port = netloc.split(':')[1]
-                                        thisURL = netloc.split(':')[0]
-                                        netloc = ".".join(thisURL.split('.')[1:])
-                                    else:
-                                        port = 443
-                                        netloc = ".".join(netloc.split('.')[1:])
-                                else:
-                                    if ":" in netloc:
-                                        port = netloc.split(':')[1]
-                                        thisURL = netloc.split(':')[0]
-                                        netloc = ".".join(thisURL.split('.')[0:])
-                                    else:
-                                        port = 443
-                                        netloc = ".".join(netloc.split('.')[0:])
-                                path = "/" + "/".join(path.split('/')[1:])
-                            else:
-                                continue
-                        if jsonResponse[j]['rules'][thisRule]['status'] in ["out","tbd"]:
-                            oosDict = {
-                                        'scheme' : scheme,
-                                        'netloc': netloc,
-                                        'path': path,
-                                        'port': port,
-                                        'wildcard': wildcard,
-                                        'fullURI' : scheme+netloc
-
-                            }
-                            oosRules.append(oosDict)
-                            continue
-                        else:
-                            pass
-
-                        scopeDict = {
-                                        'scheme' : scheme,
-                                        'netloc': netloc,
-                                        'path': path,
-                                        'port': port,
-                                        'wildcard': wildcard,
-                                        'fullURI' : scheme+netloc
-                                    }
-                    allRules.append(scopeDict)
-                    j+=1
             return(list(allRules),list(oosRules))
         if category.lower() == "host":
             scopeURL = "https://platform.synack.com/api/targets/"+slug+"/cidrs?page=all"
@@ -486,6 +383,54 @@ class synack:
             cidrs = list(set(cidrs))
             return(cidrs)
 
+    def __parseScopeRule(self, url):
+        url = urlparse(url)
+        scheme = url.scheme
+        netloc = url.netloc
+        path   = url.path
+        port   = url.port
+        wildcard = False
+        if len(netloc) != 0:
+            subdomain = netloc.split('.')[0]
+            if subdomain == "*":
+                wildcard = True
+                netloc = ".".join(netloc.split('.')[1:])
+        else:
+            if len(path) != 0:
+                netloc = path.split('/')[0]
+                checkWildcard = netloc.split('.')[0]
+                if checkWildcard == "*":
+                    wildcard = True
+                    if ":" in netloc:
+                        port = netloc.split(':')[1]
+                        thisURL = netloc.split(':')[0]
+                        netloc = ".".join(thisURL.split('.')[1:])
+                    else:
+                        port = 443
+                        netloc = ".".join(netloc.split('.')[1:])
+                else:
+                    if ":" in netloc:
+                        port = netloc.split(':')[1]
+                        thisURL = netloc.split(':')[0]
+                        netloc = ".".join(thisURL.split('.')[0:])
+                    else:
+                        port = 443
+                        netloc = ".".join(netloc.split('.')[0:])
+                path = "/" + "/".join(path.split('/')[1:])
+            else:
+                return None
+
+        result = {
+            'scheme' : scheme,
+            'netloc': netloc,
+            'path': path,
+            'port': port,
+            'wildcard': wildcard,
+            'fullURI' : scheme+netloc
+        }
+
+        return result
+
 ########################################
 ## This converts CIDR list to IP list ##
 ## This is a much faster method, previous method was causing problems on large hosts ##
@@ -497,7 +442,7 @@ class synack:
                 for ip in IPNetwork(cidrs[i]):
                     IPs.append(str(ip))
         return(IPs)
-    
+
 ##############################################
 ## This gets all of your passed assessments ##
 ##############################################
@@ -655,7 +600,7 @@ class synack:
             else:
                 next_page = False
                 pageNum += 1
-        for i in range (len(unregistered_slugs)): 
+        for i in range (len(unregistered_slugs)):
             url_register_slug = "https://platform.synack.com/api/targets/"+unregistered_slugs[i]+"/signup"
             data='{"ResearcherListing":{"terms":1}}'
             response = self.try_requests("POST", url_register_slug, 10, data)
@@ -686,7 +631,7 @@ class synack:
         csrf_token = m.group(1)
         self.webheaders['X-CSRF-Token'] = csrf_token
 
-        # fix broken Incapsula cookies - regression removed 
+        # fix broken Incapsula cookies - regression removed
         for cookie_name in self.session.cookies.iterkeys():
             cookie_value = self.session.cookies.get(cookie_name)
             if cookie_value.find("\r") > -1 or cookie_value.find("\n") > -1:
@@ -702,7 +647,7 @@ class synack:
         if not jsonResponse['success']:
             print("Error logging in: "+jsonResponse)
             return False
-        
+
         progress_token = jsonResponse['progress_token']
 
         data={"authy_token":self.getAuthy(),"progress_token":progress_token}
@@ -966,7 +911,7 @@ class synack:
                     notifications.append(jsonResponse[i])
                 else:
                     breakOuterLoop=1
-                    break    
+                    break
             if breakOuterLoop == 1:
                 break
             else:
@@ -1031,7 +976,7 @@ class synack:
                     transactions.append(ts.strftime('%Y-%m-%d')+","+str(amount))
             pageIterator=pageIterator+1
         return(transactions)
-        
+
 ########################
 ## Get LP Credentials ##
 ########################
