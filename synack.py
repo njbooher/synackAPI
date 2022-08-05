@@ -282,7 +282,7 @@ class synack:
                 else:
                     continue
             elif mission_only == False:
-                if self.jsonResponse[i]['vulnerability_discovery'] == True:               
+                if self.jsonResponse[i]['vulnerability_discovery'] == True:
                     if self.jsonResponse[i]['category']['name'].lower() == category.lower():
                         targets.append(self.jsonResponse[i]['codename'])
                     else:
@@ -350,7 +350,7 @@ class synack:
 ################################
 
     def getScope(self, codename):
-        category = self.getCategory(codename) 
+        category = self.getCategory(codename)
         orgID = self.__getOrgID(codename)
         slug = self.getTargetID(codename)
         if category.lower() == "web application":
@@ -408,7 +408,7 @@ class synack:
                                         'fullURI' : scheme+netloc
 
                         }
-                    oosRules.append(oosDict)            
+                    oosRules.append(oosDict)
                     j+=1
                 else:
                     for thisRule in range(len(jsonResponse[j]['rules'])):
@@ -497,7 +497,7 @@ class synack:
                 for ip in IPNetwork(cidrs[i]):
                     IPs.append(str(ip))
         return(IPs)
-    
+
 ##############################################
 ## This gets all of your passed assessments ##
 ##############################################
@@ -655,7 +655,7 @@ class synack:
             else:
                 next_page = False
                 pageNum += 1
-        for i in range (len(unregistered_slugs)): 
+        for i in range (len(unregistered_slugs)):
             url_register_slug = "https://platform.synack.com/api/targets/"+unregistered_slugs[i]+"/signup"
             data='{"ResearcherListing":{"terms":1}}'
             response = self.try_requests("POST", url_register_slug, 10, data)
@@ -686,7 +686,7 @@ class synack:
         csrf_token = m.group(1)
         self.webheaders['X-CSRF-Token'] = csrf_token
 
-        # fix broken Incapsula cookies - regression removed 
+        # fix broken Incapsula cookies - regression removed
         for cookie_name in self.session.cookies.iterkeys():
             cookie_value = self.session.cookies.get(cookie_name)
             if cookie_value.find("\r") > -1 or cookie_value.find("\n") > -1:
@@ -702,7 +702,7 @@ class synack:
         if not jsonResponse['success']:
             print("Error logging in: "+jsonResponse)
             return False
-        
+
         progress_token = jsonResponse['progress_token']
 
         data={"authy_token":self.getAuthy(),"progress_token":progress_token}
@@ -748,22 +748,22 @@ class synack:
         assert "Synack" in driver.title
 ## Fill in the email address ##
         email_path = '/html/body/div[2]/div/div/div[2]/form/fieldset/input'
-        driver.find_element_by_xpath(email_path).click()
-        driver.find_element_by_xpath(email_path).send_keys(self.email)
+        driver.find_element(By.XPATH, email_path).click()
+        driver.find_element(By.XPATH, email_path).send_keys(self.email)
 ## Fill in the password ##
         password_path = '/html/body/div[2]/div/div/div[2]/form/fieldset/div[1]/input'
-        driver.find_element_by_xpath(password_path).click()
-        driver.find_element_by_xpath(password_path).send_keys(self.password)
+        driver.find_element(By.XPATH, password_path).click()
+        driver.find_element(By.XPATH, password_path).send_keys(self.password)
 ## Click the login button ##
         login_path = '/html/body/div[2]/div/div/div[2]/form/fieldset/div[2]/button'
-        driver.find_element_by_xpath(login_path).click()
+        driver.find_element(By.XPATH, login_path).click()
         time.sleep(5)
 ## Hope the authy works! ##
         authy_path = '/html/body/div[2]/div/div/div[2]/form/fieldset/input'
-        driver.find_element_by_xpath(authy_path).click()
-        driver.find_element_by_xpath(authy_path).send_keys(self.getAuthy())
+        driver.find_element(By.XPATH, authy_path).click()
+        driver.find_element(By.XPATH, authy_path).send_keys(self.getAuthy())
         authy_submit_path = '/html/body/div[2]/div/div/div[2]/form/fieldset/div[1]/button'
-        driver.find_element_by_xpath(authy_submit_path).click()
+        driver.find_element(By.XPATH, authy_submit_path).click()
         while True:
             self.token = driver.execute_script("return sessionStorage.getItem('shared-session-com.synack.accessToken')")
             if isinstance(self.token, str):
@@ -966,7 +966,7 @@ class synack:
                     notifications.append(jsonResponse[i])
                 else:
                     breakOuterLoop=1
-                    break    
+                    break
             if breakOuterLoop == 1:
                 break
             else:
@@ -1031,7 +1031,7 @@ class synack:
                     transactions.append(ts.strftime('%Y-%m-%d')+","+str(amount))
             pageIterator=pageIterator+1
         return(transactions)
-        
+
 ########################
 ## Get LP Credentials ##
 ########################
